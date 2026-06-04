@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListTickets, getListTicketsQueryKey, useDeleteTicket, ListTicketsParams } from "@workspace/api-client-react";
+import { useListTickets, getListTicketsQueryKey, useDeleteTicket, ListTicketsParams, Ticket } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import { TicketFormDialog } from "@/components/TicketFormDialog";
 
 export default function Tickets() {
   const { toast } = useToast();
@@ -18,6 +19,9 @@ export default function Tickets() {
     page: 1,
     limit: 10,
   });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
   const { data, isLoading } = useListTickets(params, {
     query: { queryKey: getListTicketsQueryKey(params) }
@@ -42,6 +46,16 @@ export default function Tickets() {
     }
   };
 
+  const openAddModal = () => {
+    setSelectedTicket(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setIsModalOpen(true);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Open": return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20">{status}</Badge>;
@@ -56,7 +70,7 @@ export default function Tickets() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight text-white">Tickets</h1>
-        <Button className="bg-primary text-white">
+        <Button className="bg-primary text-white" onClick={openAddModal}>
           <Plus className="w-4 h-4 mr-2" /> Add Ticket
         </Button>
       </div>
@@ -117,7 +131,7 @@ export default function Tickets() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEditModal(ticket)}>
                                 <Edit className="mr-2 h-4 w-4" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={() => handleDelete(ticket.id)}>
@@ -165,6 +179,12 @@ export default function Tickets() {
           )}
         </CardContent>
       </Card>
+      
+      <TicketFormDialog 
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        ticket={selectedTicket}
+      />
     </div>
   );
 }

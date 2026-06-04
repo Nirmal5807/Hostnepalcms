@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListClients, getListClientsQueryKey, useDeleteClient, ListClientsParams } from "@workspace/api-client-react";
+import { useListClients, getListClientsQueryKey, useDeleteClient, ListClientsParams, Client } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { Loader2, Plus, Search, MoreHorizontal, Edit, Trash2, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import { ClientFormDialog } from "@/components/ClientFormDialog";
 
 export default function Clients() {
   const { toast } = useToast();
@@ -20,6 +21,9 @@ export default function Clients() {
     limit: 10,
     search: "",
   });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   const { data, isLoading } = useListClients(params, {
     query: { queryKey: getListClientsQueryKey(params) }
@@ -44,6 +48,24 @@ export default function Clients() {
     }
   };
 
+  const openAddModal = () => {
+    setSelectedClient(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (client: Client) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+
+  const handleExportCsv = () => {
+    const urlParams = new URLSearchParams();
+    if (params.status && params.status !== "all") urlParams.append("status", params.status);
+    if (params.serviceType && params.serviceType !== "all") urlParams.append("serviceType", params.serviceType);
+    if (params.paymentStatus && params.paymentStatus !== "all") urlParams.append("paymentStatus", params.paymentStatus);
+    window.open(`/api/export/csv?${urlParams.toString()}`, "_blank");
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Active": return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">{status}</Badge>;
@@ -66,9 +88,14 @@ export default function Clients() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight text-white">Clients</h1>
-        <Button className="bg-primary text-white">
-          <Plus className="w-4 h-4 mr-2" /> Add Client
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportCsv}>
+            <Download className="w-4 h-4 mr-2" /> Export CSV
+          </Button>
+          <Button className="bg-primary text-white" onClick={openAddModal}>
+            <Plus className="w-4 h-4 mr-2" /> Add Client
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -158,7 +185,7 @@ export default function Clients() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEditModal(client)}>
                                 <Edit className="mr-2 h-4 w-4" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={() => handleDelete(client.id)}>
@@ -206,6 +233,12 @@ export default function Clients() {
           )}
         </CardContent>
       </Card>
+      
+      <ClientFormDialog 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen} 
+        client={selectedClient} 
+      />
     </div>
   );
 }

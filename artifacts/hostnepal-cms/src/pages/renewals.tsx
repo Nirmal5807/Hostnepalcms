@@ -17,7 +17,7 @@ export default function Renewals() {
   const [selectedClient, setSelectedClient] = useState<any>(null);
 
   const getMessageTemplate = (client: any, days: number) => {
-    return `📢 **Service Renewal Reminder**
+    return `[URGENT] **Service Renewal Reminder**
 Hello ${client.fullName} ${client.discordUsername ? `(Discord: ${client.discordUsername})` : ''}
 Your ${client.serviceType} service **${client.planName}** (Server: ${client.serverId}) is due for renewal in **${days} day(s)**.
 Renewal Date: ${format(new Date(client.renewalDate), 'MMMM d, yyyy')}
