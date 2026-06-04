@@ -351,10 +351,15 @@ export async function customFetch<T = unknown>(
 
   // Attach bearer token when an auth getter is configured and no
   // Authorization header has been explicitly provided.
-  if (_authTokenGetter && !headers.has("authorization")) {
-    const token = await _authTokenGetter();
-    if (token) {
-      headers.set("authorization", `Bearer ${token}`);
+  if (!headers.has("authorization")) {
+    const localToken = typeof localStorage !== 'undefined' ? localStorage.getItem("hostnepal_token") : null;
+    if (localToken) {
+      headers.set("authorization", `Bearer ${localToken}`);
+    } else if (_authTokenGetter) {
+      const token = await _authTokenGetter();
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
     }
   }
 
@@ -363,6 +368,10 @@ export async function customFetch<T = unknown>(
   const response = await fetch(input, { ...init, method, headers });
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      localStorage.removeItem("hostnepal_token");
+      window.location.href = "/login";
+    }
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);
   }

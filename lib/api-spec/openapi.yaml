@@ -1,22 +1,30 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: HostNepal CMS API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: clients
+    description: Client management
+  - name: tickets
+    description: Ticket management
+  - name: revenue
+    description: Revenue and reporting
+  - name: export
+    description: Data export
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +32,421 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List all clients
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: serviceType
+          in: query
+          schema:
+            type: string
+            enum: [Minecraft Hosting, VPS Hosting, all]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Active, Suspended, Expired, all]
+        - name: paymentStatus
+          in: query
+          schema:
+            type: string
+            enum: [Paid, Pending, Overdue, all]
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [renewalDate, purchaseDate, fullName, monthlyPrice]
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Client list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientListResponse"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a new client
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "201":
+          description: Client created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get a client by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateClient
+      tags: [clients]
+      summary: Update a client
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientUpdate"
+      responses:
+        "200":
+          description: Updated client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+    delete:
+      operationId: deleteClient
+      tags: [clients]
+      summary: Delete a client
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /clients/stats/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [clients]
+      summary: Get dashboard statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /clients/stats/renewals:
+    get:
+      operationId: getRenewalReminders
+      tags: [clients]
+      summary: Get clients expiring soon
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Renewal reminders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenewalRemindersResponse"
+
+  /clients/stats/revenue-chart:
+    get:
+      operationId: getRevenueChart
+      tags: [clients]
+      summary: Get revenue chart data
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Revenue chart data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueChartResponse"
+
+  /tickets:
+    get:
+      operationId: listTickets
+      tags: [tickets]
+      summary: List all tickets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clientId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Open, In Progress, Resolved, Closed, all]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ticket list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketListResponse"
+    post:
+      operationId: createTicket
+      tags: [tickets]
+      summary: Create a ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketInput"
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+
+  /tickets/{id}:
+    put:
+      operationId: updateTicket
+      tags: [tickets]
+      summary: Update a ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketUpdate"
+      responses:
+        "200":
+          description: Updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+    delete:
+      operationId: deleteTicket
+      tags: [tickets]
+      summary: Delete a ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /revenue:
+    get:
+      operationId: getRevenueReport
+      tags: [revenue]
+      summary: Get revenue report
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Revenue report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueReport"
+
+  /export/csv:
+    get:
+      operationId: exportCsv
+      tags: [export]
+      summary: Export clients to CSV
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: serviceType
+          in: query
+          schema:
+            type: string
+        - name: paymentStatus
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/excel:
+    get:
+      operationId: exportExcel
+      tags: [export]
+      summary: Export clients to Excel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: serviceType
+          in: query
+          schema:
+            type: string
+        - name: paymentStatus
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Excel file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +456,397 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      required: [id, username, role]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+
+    Client:
+      type: object
+      required:
+        - id
+        - fullName
+        - email
+        - serviceType
+        - planName
+        - serverId
+        - purchaseDate
+        - renewalDate
+        - paymentStatus
+        - monthlyPrice
+        - status
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        discordUsername:
+          type: ["string", "null"]
+        discordId:
+          type: ["string", "null"]
+        serviceType:
+          type: string
+          enum: [Minecraft Hosting, VPS Hosting]
+        planName:
+          type: string
+        serverId:
+          type: string
+        purchaseDate:
+          type: string
+          format: date-time
+        renewalDate:
+          type: string
+          format: date-time
+        paymentStatus:
+          type: string
+          enum: [Paid, Pending, Overdue]
+        monthlyPrice:
+          type: number
+        notes:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [Active, Suspended, Expired]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ClientInput:
+      type: object
+      required:
+        - fullName
+        - email
+        - serviceType
+        - planName
+        - serverId
+        - purchaseDate
+        - renewalDate
+        - paymentStatus
+        - monthlyPrice
+        - status
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        discordUsername:
+          type: string
+        discordId:
+          type: string
+        serviceType:
+          type: string
+          enum: [Minecraft Hosting, VPS Hosting]
+        planName:
+          type: string
+        serverId:
+          type: string
+        purchaseDate:
+          type: string
+        renewalDate:
+          type: string
+        paymentStatus:
+          type: string
+          enum: [Paid, Pending, Overdue]
+        monthlyPrice:
+          type: number
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [Active, Suspended, Expired]
+
+    ClientUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        discordUsername:
+          type: string
+        discordId:
+          type: string
+        serviceType:
+          type: string
+          enum: [Minecraft Hosting, VPS Hosting]
+        planName:
+          type: string
+        serverId:
+          type: string
+        purchaseDate:
+          type: string
+        renewalDate:
+          type: string
+        paymentStatus:
+          type: string
+          enum: [Paid, Pending, Overdue]
+        monthlyPrice:
+          type: number
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [Active, Suspended, Expired]
+
+    ClientListResponse:
+      type: object
+      required: [clients, total, page, limit, totalPages]
+      properties:
+        clients:
+          type: array
+          items:
+            $ref: "#/components/schemas/Client"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+
+    DashboardStats:
+      type: object
+      required:
+        - totalClients
+        - activeServices
+        - expiredServices
+        - pendingPayments
+        - monthlyRevenue
+        - annualRevenue
+        - overduePayments
+        - suspendedServices
+      properties:
+        totalClients:
+          type: integer
+        activeServices:
+          type: integer
+        expiredServices:
+          type: integer
+        suspendedServices:
+          type: integer
+        pendingPayments:
+          type: integer
+        overduePayments:
+          type: integer
+        monthlyRevenue:
+          type: number
+        annualRevenue:
+          type: number
+        serviceTypeBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceTypeCount"
+
+    ServiceTypeCount:
+      type: object
+      required: [serviceType, count]
+      properties:
+        serviceType:
+          type: string
+        count:
+          type: integer
+
+    RenewalReminder:
+      type: object
+      required: [client, daysUntilRenewal]
+      properties:
+        client:
+          $ref: "#/components/schemas/Client"
+        daysUntilRenewal:
+          type: integer
+        urgency:
+          type: string
+          enum: [critical, warning, notice]
+
+    RenewalRemindersResponse:
+      type: object
+      required: [reminders, total]
+      properties:
+        reminders:
+          type: array
+          items:
+            $ref: "#/components/schemas/RenewalReminder"
+        total:
+          type: integer
+
+    RevenueChartData:
+      type: object
+      required: [month, revenue, clients]
+      properties:
+        month:
+          type: string
+        revenue:
+          type: number
+        clients:
+          type: integer
+
+    RevenueChartResponse:
+      type: object
+      required: [monthly]
+      properties:
+        monthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueChartData"
+
+    Ticket:
+      type: object
+      required:
+        - id
+        - ticketId
+        - clientId
+        - subject
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+        ticketId:
+          type: string
+        clientId:
+          type: string
+        clientName:
+          type: ["string", "null"]
+        subject:
+          type: string
+        status:
+          type: string
+          enum: [Open, In Progress, Resolved, Closed]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TicketInput:
+      type: object
+      required: [clientId, subject, status]
+      properties:
+        clientId:
+          type: string
+        subject:
+          type: string
+        status:
+          type: string
+          enum: [Open, In Progress, Resolved, Closed]
+        notes:
+          type: string
+
+    TicketUpdate:
+      type: object
+      properties:
+        subject:
+          type: string
+        status:
+          type: string
+          enum: [Open, In Progress, Resolved, Closed]
+        notes:
+          type: string
+
+    TicketListResponse:
+      type: object
+      required: [tickets, total, page, limit, totalPages]
+      properties:
+        tickets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ticket"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+
+    RevenueReport:
+      type: object
+      required:
+        - monthlyRevenue
+        - annualRevenue
+        - activeRevenue
+        - lostRevenue
+        - projectedAnnual
+      properties:
+        monthlyRevenue:
+          type: number
+        annualRevenue:
+          type: number
+        activeRevenue:
+          type: number
+        lostRevenue:
+          type: number
+        projectedAnnual:
+          type: number
+        byServiceType:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueByService"
+        recentMonths:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueChartData"
+
+    RevenueByService:
+      type: object
+      required: [serviceType, revenue, clients]
+      properties:
+        serviceType:
+          type: string
+        revenue:
+          type: number
+        clients:
+          type: integer

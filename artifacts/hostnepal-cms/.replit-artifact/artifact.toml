@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "HostNepal CMS"
+version = "1.0.0"
+id = "artifacts/hostnepal-cms"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20805
+
+[services.development]
+run = "pnpm --filter @workspace/hostnepal-cms run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hostnepal-cms", "run", "build" ]
+publicDir = "artifacts/hostnepal-cms/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20805"
+BASE_PATH = "/"
