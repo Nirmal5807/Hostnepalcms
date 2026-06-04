@@ -6,10 +6,17 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "build": "vite build"
+  },
   "dependencies": {
     "@tanstack/react-query": "catalog:"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
   },
   "peerDependencies": {
     "react": ">=18"
   }
 }
+
