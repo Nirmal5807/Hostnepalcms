@@ -40,4 +40,10 @@ connectMongoDB().catch((err) => {
 
 app.use("/api", router);
 
+// --- थपिएको नयाँ कोड यहाँ छ ---
+app.get("/", (req, res) => {
+  res.send("Server is running successfully!");
+});
+// ----------------------------
+
 export default app;
