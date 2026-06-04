@@ -1,6 +1,5 @@
 {
-  "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter api-client-react build",
-  "outputDirectory": "lib/api-client-react/dist"
+  "installCommand": "pnpm install --no-frozen-lockfile"
 }
 
