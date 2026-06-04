@@ -1,0 +1,4 @@
+{
+  "buildCommand": "pnpm --filter api-client-react build",
+  "outputDirectory": "lib/api-client-react/dist"
+}
